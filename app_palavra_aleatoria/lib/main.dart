@@ -1,7 +1,6 @@
 import 'package:english_words/english_words.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'dart:ui';
 
 void main() {
   runApp(MyApp());
@@ -36,13 +35,13 @@ class MyAppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  var favorites = <WordPair>{};
+  var favoritos = <WordPair>[];
 
   void toggleFavorite() {
-    if (favorites.contains(current)) {
-      favorites.remove(current);
+    if (favoritos.contains(current)) {
+      favoritos.remove(current);
     } else {
-      favorites.add(current);
+      favoritos.add(current);
     }
     notifyListeners();
   }
@@ -64,42 +63,71 @@ class _MyHomePageState extends State<MyHomePage> {
         page = GeneratorPage();
         break;
       case 1:
-        page = Placeholder();
+        page = FavoritesPage();
         break;
       default:
         throw UnimplementedError('Não tem tela para: $selectedIndex');
     }
 
-    return Scaffold(
-      body: Row(
-        children: [
-          SafeArea(
-            child: NavigationRail(
-              extended: false,
-              destinations: [
-                NavigationRailDestination(
-                  icon: Icon(Icons.home),
-                  label: Text('Home'),
+    return LayoutBuilder(
+      builder: (context, Constraints) {
+        return Scaffold(
+          body: Row(
+            children: [
+              SafeArea(
+                child: NavigationRail(
+                  extended: Constraints.maxWidth >= 600,
+                  destinations: [
+                    NavigationRailDestination(
+                      icon: Icon(Icons.home),
+                      label: Text('Home'),
+                    ),
+                    NavigationRailDestination(
+                      icon: Icon(Icons.favorite),
+                      label: Text('Favorites'),
+                    ),
+                  ],
+                  selectedIndex: selectedIndex,
+                  onDestinationSelected: (value) {
+                    setState(() => selectedIndex = value);
+                  },
                 ),
-                NavigationRailDestination(
-                  icon: Icon(Icons.favorite),
-                  label: Text('Favorites'),
+              ),
+              Expanded(
+                child: Container(
+                  color: Theme.of(context).colorScheme.primaryContainer,
+                  child: page,
                 ),
-              ],
-              selectedIndex: selectedIndex,
-              onDestinationSelected: (value) {
-                setState(() => selectedIndex = value);
-              },
-            ),
+              ),
+            ],
           ),
-          Expanded(
-            child: Container(
-              color: Theme.of(context).colorScheme.primaryContainer,
-              child: GeneratorPage(),
-            ),
+        );
+      },
+    );
+  }
+}
+
+class FavoritesPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    var appState = context.watch<MyAppState>();
+
+    if (appState.favoritos.isEmpty) {
+      return Center(child: Text('Não existem favoritos'));
+    }
+
+    return ListView(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(20),
+          child: Text('Existem ${appState.favoritos.length} nomes favoritos:'),
+        ),
+        for (var pair in appState.favoritos)
+          ListTile(
+            leading: Icon(Icons.favorite, color: Colors.red),
+            title: Text(pair.asLowerCase),
           ),
-        ],
-      ),
+      ],
     );
   }
 }
@@ -111,7 +139,7 @@ class GeneratorPage extends StatelessWidget {
     var pair = appState.current;
 
     IconData icon;
-    if (appState.favorites.contains(pair)) {
+    if (appState.favoritos.contains(pair)) {
       icon = Icons.favorite;
     } else {
       icon = Icons.favorite_border;
